@@ -1,15 +1,44 @@
-package pricingEngine_test
+package application_test
 
 import (
-	"carries-cars.com/money"
-	pricingEngine "carries-cars.com/pricingEngine"
 	"testing"
+	"time"
+
+	pricingEngine "github.com/adolsalamanca/carries-cars-golang/internal/application"
+	"github.com/adolsalamanca/carries-cars-golang/internal/domain"
 )
 
+func Test_RegularReserver_does_not_allow_exceeding_limit(t *testing.T) {
+	reserver := pricingEngine.NewRegularReserver(time.Millisecond)
+
+	reserver.Reserve()
+	ticker := time.NewTicker(time.Millisecond * 2)
+	<-ticker.C
+
+	expected := pricingEngine.TimeExceededAfterReservationErr
+	err := reserver.Start()
+	if err != expected {
+		t.Fatalf("expected %s err, obtained %s", expected, err)
+	}
+}
+
+func Test_ExtendedReserver_does_allow_exceeding_limit(t *testing.T) {
+	reserver := pricingEngine.NewExtendedReserver(time.Millisecond)
+
+	reserver.Reserve()
+	ticker := time.NewTicker(time.Millisecond * 2)
+
+	<-ticker.C
+	err := reserver.Start()
+	if err != nil {
+		t.Fatalf("expected nil err, obtained %s", err)
+	}
+}
+
 func Test_CalculatePrice_charged_per_minute(t *testing.T) {
-	pricePerMinute := money.EUR(30)
+	pricePerMinute := domain.EUR(30)
 	duration, _ := pricingEngine.DurationInMinutes(1)
-	expected := money.EUR(30)
+	expected := domain.EUR(30)
 
 	if !pricingEngine.CalculatePrice(pricePerMinute, duration).Equals(expected) {
 		t.Fatalf("Price EUR(30) x 1min, want = EUR(30), have = EUR(%v)", expected.Amount())

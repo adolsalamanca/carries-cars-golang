@@ -4,27 +4,28 @@ on:
   push: ~
   pull_request:
     branches: [ '**' ]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
-    strategy:
-      matrix:
-        go-version: [ 1.14.x ]
-        module: [ "money", "pricingEngine" ]
-
     runs-on: ubuntu-18.04
-
     steps:
+      - name: Set up Go 1.17
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17
+        id: go
+
       - name: checkout
         uses: actions/checkout@v2
 
       - name: run tests
-        env:
-          MODULE_NAME: ${{ matrix.module }}
-        run: cd ${MODULE_NAME} && go test ./... -json > test-${MODULE_NAME}.json
+        run: go test ./... -json > test-carries-cars-golang.json
 
       - name: Annotate tests
         if: always()
         uses: guyarb/golang-test-annotations@v0.3.0
         with:
-          test-results: ${{ matrix.module }}/test-${{ matrix.module }}.json
+          test-results: test-carries-cars-golang.json
