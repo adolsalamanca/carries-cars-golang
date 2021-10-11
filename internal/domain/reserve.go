@@ -13,11 +13,16 @@ var (
 type Reserver interface {
 	Reserve()
 	Start() error
+	Excess() float64
 }
 
 type RegularReserver struct {
 	startTime time.Time
 	limit     time.Duration
+}
+
+func (r *RegularReserver) Excess() float64 {
+	return 0.0
 }
 
 func NewRegularReserver(limit time.Duration) RegularReserver {
@@ -41,6 +46,10 @@ type ExtendedReserver struct {
 	startTime       time.Time
 	limit           time.Duration
 	excessInSeconds float64
+}
+
+func (r *ExtendedReserver) Excess() float64 {
+	return r.excessInSeconds
 }
 
 func NewExtendedReserver(limit time.Duration) ExtendedReserver {
