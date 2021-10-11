@@ -25,8 +25,8 @@ func (r *RegularReserver) Excess() float64 {
 	return 0.0
 }
 
-func NewRegularReserver(limit time.Duration) RegularReserver {
-	return RegularReserver{
+func NewRegularReserver(limit time.Duration) *RegularReserver {
+	return &RegularReserver{
 		limit: limit,
 	}
 }
@@ -52,8 +52,8 @@ func (r *ExtendedReserver) Excess() float64 {
 	return r.excessInSeconds
 }
 
-func NewExtendedReserver(limit time.Duration) ExtendedReserver {
-	return ExtendedReserver{
+func NewExtendedReserver(limit time.Duration) *ExtendedReserver {
+	return &ExtendedReserver{
 		limit: limit,
 	}
 }

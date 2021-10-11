@@ -6,6 +6,24 @@ import (
 	"github.com/adolsalamanca/carries-cars-golang/internal/domain"
 )
 
+type Calculator interface {
+	CalculatePrice(pricePerMinute domain.Money, duration Duration) domain.Money
+}
+
+type PricingEngine struct {
+	reserver domain.Reserver
+}
+
+func (p PricingEngine) CalculatePrice(pricePerMinute domain.Money, duration Duration) domain.Money {
+	durationInMinutes := float64(duration.DurationInMinutes())
+
+	return pricePerMinute.MultiplyAndRound(durationInMinutes + p.reserver.Excess())
+}
+
+func NewPricingEngine(reserver domain.Reserver) PricingEngine {
+	return PricingEngine{reserver: reserver}
+}
+
 // UnverifiedDuration should be used when accepting input from untrusted sources (pretty much anywhere) in the model.
 // This type models input that has not been verified and is therefore unsafe to use until it has been verified.
 // Use Verify() to transform it to trusted input in the form of a duration model.
