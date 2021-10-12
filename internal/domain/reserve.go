@@ -2,7 +2,6 @@ package domain
 
 import (
 	"errors"
-	"math"
 	"time"
 )
 
@@ -11,32 +10,27 @@ var (
 )
 
 type Reserver interface {
-	Reserve()
-	Start() error
-	Excess() float64
+	StartAfter(time.Duration) error
+	ExcessInMinutes() time.Duration
 }
 
 type RegularReserver struct {
-	startTime time.Time
-	limit     time.Duration
-}
-
-func (r *RegularReserver) Excess() float64 {
-	return 0.0
+	startTime    time.Time
+	limitMinutes time.Duration
 }
 
 func NewRegularReserver(limit time.Duration) *RegularReserver {
 	return &RegularReserver{
-		limit: limit,
+		limitMinutes: limit,
 	}
 }
 
-func (r *RegularReserver) Reserve() {
-	r.startTime = time.Now()
+func (r *RegularReserver) ExcessInMinutes() time.Duration {
+	return 0
 }
 
-func (r *RegularReserver) Start() error {
-	if time.Since(r.startTime) > r.limit {
+func (r *RegularReserver) StartAfter(timeSinceReservation time.Duration) error {
+	if timeSinceReservation.Minutes() > r.limitMinutes.Minutes() {
 		return TimeExceededAfterReservationErr
 	}
 	return nil
@@ -44,27 +38,22 @@ func (r *RegularReserver) Start() error {
 
 type ExtendedReserver struct {
 	startTime       time.Time
-	limit           time.Duration
-	excessInSeconds float64
+	limitInMinutes  time.Duration
+	excessInMinutes time.Duration
 }
 
-func (r *ExtendedReserver) Excess() float64 {
-	return r.excessInSeconds
+func (r *ExtendedReserver) ExcessInMinutes() time.Duration {
+	return r.excessInMinutes - r.limitInMinutes
 }
 
 func NewExtendedReserver(limit time.Duration) *ExtendedReserver {
 	return &ExtendedReserver{
-		limit: limit,
+		limitInMinutes: limit,
 	}
 }
 
-func (r *ExtendedReserver) Reserve() {
-	r.startTime = time.Now()
-}
+func (r *ExtendedReserver) StartAfter(timeSinceReservation time.Duration) error {
+	r.excessInMinutes = timeSinceReservation
 
-func (r *ExtendedReserver) Start() error {
-	if startTime := time.Since(r.startTime); startTime > r.limit {
-		r.excessInSeconds = math.Round(startTime.Seconds())
-	}
 	return nil
 }

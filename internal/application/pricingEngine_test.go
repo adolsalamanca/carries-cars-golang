@@ -11,16 +11,17 @@ import (
 func TestPricingEngine_With_RegularReserver_CalculatesPrice(t *testing.T) {
 	pricePerMinute := domain.EUR(30)
 	duration, _ := pricingEngine.DurationInMinutes(1)
-	reserver := domain.NewRegularReserver(time.Millisecond)
-	reserver.Reserve()
-	reserver.Start()
+	reserver := domain.NewRegularReserver(time.Minute)
+	engine := pricingEngine.NewPricingEngine(reserver, domain.EUR(9))
 
-	engine := pricingEngine.NewPricingEngine(reserver)
-	engine.CalculatePrice(pricePerMinute, duration)
+	err := engine.StartAfter(0)
+	if err != nil {
+		t.Fatalf("expected nil err, obtained %s", err)
+	}
 
 	expected := domain.EUR(30)
-	if !pricingEngine.CalculatePrice(pricePerMinute, duration).Equals(expected) {
-		t.Fatalf("Price EUR(30) x 1min, want = EUR(30), have = EUR(%v)", expected.Amount())
+	if got := engine.CalculatePrice(pricePerMinute, duration); !got.Equals(expected) {
+		t.Fatalf("Expected %v, but have %v", expected.Amount(), got.Amount())
 	}
 }
 
@@ -28,15 +29,16 @@ func TestPricingEngine_With_ExtendedReserver_without_exceed_limit_CalculatesPric
 	pricePerMinute := domain.EUR(30)
 	duration, _ := pricingEngine.DurationInMinutes(1)
 	reserver := domain.NewExtendedReserver(time.Millisecond)
-	reserver.Reserve()
-	reserver.Start()
+	engine := pricingEngine.NewPricingEngine(reserver, domain.EUR(9))
 
-	engine := pricingEngine.NewPricingEngine(reserver)
-	engine.CalculatePrice(pricePerMinute, duration)
+	err := engine.StartAfter(0)
+	if err != nil {
+		t.Fatalf("expected nil err, obtained %s", err)
+	}
 
 	expected := domain.EUR(30)
-	if !pricingEngine.CalculatePrice(pricePerMinute, duration).Equals(expected) {
-		t.Fatalf("Price EUR(30) x 1min, want = EUR(30), have = EUR(%v)", expected.Amount())
+	if got := engine.CalculatePrice(pricePerMinute, duration); !got.Equals(expected) {
+		t.Fatalf("Expected %v, but have %v", expected.Amount(), got.Amount())
 	}
 }
 
@@ -44,28 +46,16 @@ func TestPricingEngine_With_ExtendedReserver_and_lasted_more_than_limit_Calculat
 	pricePerMinute := domain.EUR(30)
 	duration, _ := pricingEngine.DurationInMinutes(1)
 	reserver := domain.NewExtendedReserver(time.Millisecond)
+	engine := pricingEngine.NewPricingEngine(reserver, domain.EUR(9))
 
-	reserver.Reserve()
-	ticker := time.NewTicker(time.Second * 1)
-
-	<-ticker.C
-	reserver.Start()
-
-	engine := pricingEngine.NewPricingEngine(reserver)
-
-	expected := domain.EUR(60)
-	if !engine.CalculatePrice(pricePerMinute, duration).Equals(expected) {
-		t.Fatalf("Price EUR(30) x 2min, want = EUR(60), have = EUR(%v)", expected.Amount())
+	err := engine.StartAfter(time.Minute)
+	if err != nil {
+		t.Fatalf("expected nil err, obtained %s", err)
 	}
-}
 
-func Test_CalculatePrice_charged_per_minute(t *testing.T) {
-	pricePerMinute := domain.EUR(30)
-	duration, _ := pricingEngine.DurationInMinutes(1)
-	expected := domain.EUR(30)
-
-	if !pricingEngine.CalculatePrice(pricePerMinute, duration).Equals(expected) {
-		t.Fatalf("Price EUR(30) x 1min, want = EUR(30), have = EUR(%v)", expected.Amount())
+	expected := domain.EUR(39)
+	if got := engine.CalculatePrice(pricePerMinute, duration); !got.Equals(expected) {
+		t.Fatalf("Expected %v, but have %v", expected.Amount(), got.Amount())
 	}
 }
 

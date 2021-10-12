@@ -1,10 +1,15 @@
 package domain
 
-import "math"
+import (
+	"errors"
+	"math"
+)
 
 type CurrencyIsoCode string
 
 type Money interface {
+	Add(moneyToBeAdded Money) (Money, error)
+
 	// Amount is denoted in the lowest denominator of the corresponding currency.
 	// E.g. amount is in whole cents for the Euro or UnitedStatesDollar
 	Amount() int
@@ -62,8 +67,18 @@ type trustedMoney struct {
 	currencyIsoCode CurrencyIsoCode
 }
 
-// Boring (machine-generated) code below
+func (money trustedMoney) Add(moneyToBeAdded Money) (Money, error) {
+	if money.currencyIsoCode != moneyToBeAdded.CurrencyIsoCode() {
+		return nil, errors.New("could not add different currency money")
+	}
 
+	return trustedMoney{
+		amount:          money.amount + moneyToBeAdded.Amount(),
+		currencyIsoCode: money.currencyIsoCode,
+	}, nil
+}
+
+// Boring (machine-generated) code below
 func (money trustedMoney) CurrencyIsoCode() CurrencyIsoCode {
 	return money.currencyIsoCode
 }

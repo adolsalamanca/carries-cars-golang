@@ -2,6 +2,7 @@ package application
 
 import (
 	"errors"
+	"log"
 
 	"github.com/adolsalamanca/carries-cars-golang/internal/domain"
 )
@@ -11,17 +12,32 @@ type Calculator interface {
 }
 
 type PricingEngine struct {
-	reserver domain.Reserver
+	domain.Reserver
+	pricePerExcessMinute domain.Money
 }
 
 func (p PricingEngine) CalculatePrice(pricePerMinute domain.Money, duration Duration) domain.Money {
-	durationInMinutes := float64(duration.DurationInMinutes())
+	tripDurationInMinutes := float64(duration.DurationInMinutes())
 
-	return pricePerMinute.MultiplyAndRound(durationInMinutes + p.reserver.Excess())
+	exceededReservationMinutes := p.ExcessInMinutes()
+	if exceededReservationMinutes != 0 {
+		excessPrice := p.pricePerExcessMinute.MultiplyAndRound(exceededReservationMinutes.Minutes())
+
+		price, err := pricePerMinute.MultiplyAndRound(tripDurationInMinutes).Add(excessPrice)
+		if err != nil {
+			log.Fatalf("could not calculate price, %v", err)
+		}
+		return price
+	}
+
+	return pricePerMinute.MultiplyAndRound(tripDurationInMinutes)
 }
 
-func NewPricingEngine(reserver domain.Reserver) PricingEngine {
-	return PricingEngine{reserver: reserver}
+func NewPricingEngine(reserver domain.Reserver, pricePerExcessMinute domain.Money) PricingEngine {
+	return PricingEngine{
+		Reserver:             reserver,
+		pricePerExcessMinute: pricePerExcessMinute,
+	}
 }
 
 // UnverifiedDuration should be used when accepting input from untrusted sources (pretty much anywhere) in the model.
@@ -33,12 +49,6 @@ type UnverifiedDuration struct {
 
 func (unsafe UnverifiedDuration) Verify() (Duration, error) {
 	return DurationInMinutes(unsafe.DurationInMinutes)
-}
-
-func CalculatePrice(pricePerMinute domain.Money, duration Duration) domain.Money {
-	durationInMinutes := float64(duration.DurationInMinutes())
-
-	return pricePerMinute.MultiplyAndRound(durationInMinutes)
 }
 
 type Duration interface {

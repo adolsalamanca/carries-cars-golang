@@ -42,6 +42,28 @@ func Test_Money_Multiply_multiplies(t *testing.T) {
 	}
 }
 
+func Test_Money_Add_Same_Currency(t *testing.T) {
+	actual := domain.EUR(200)
+	got, err := actual.Add(domain.EUR(200))
+	if err != nil {
+		t.Fatalf("expected nil err, obtained %s", err)
+	}
+
+	expected := domain.EUR(400)
+
+	if got != expected {
+		t.Fatalf("EUR(200).MultiplyAndRound(2.00) want = EUR(%v), have = EUR(%v)", expected.Amount(), got.Amount())
+	}
+}
+
+func Test_Money_Add_Different_Currency(t *testing.T) {
+	actual := domain.EUR(200)
+	_, err := actual.Add(domain.USD(200))
+	if err == nil {
+		t.Fatal("expected not nil err, but no error was obtained")
+	}
+}
+
 func Test_Money_Multiply_rounds_upward_correctly(t *testing.T) {
 	actual := domain.EUR(100).MultiplyAndRound(1.999)
 	expected := domain.EUR(200)
